@@ -1,0 +1,91 @@
+---
+title: "Dataverse Transcript Work"
+author: "Imran Siddiqui"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+getwd()
+#setwd("Users/imransiddiqui")
+install.packages("dataverse")
+library(dataverse)
+library(tibble) 
+library(tidyverse)
+library(readr)
+
+
+```
+
+
+sample one
+```{r}
+dataset <- get_dataset("doi:10.7910/DVN/ARKOTI")
+dataset$files[c("filename", "contentType")]
+str(dataset_metadata("10.7910/DVN/ARKOTI"), 2)
+
+energy <- get_dataframe_by_name(
+  "comprehensiveJapanEnergy.tab",
+  "10.7910/DVN/ARKOTI")
+```
+
+
+msnbc one
+```{r}
+Sys.setenv("DATAVERSE_SERVER" = "dataverse.harvard.edu")
+
+#Testing msnbc
+datasetMSNBC <- get_dataset("doi:10.7910/DVN/UPJDE1")
+datasetMSNBC$files[c("filename", "contentType")]
+
+str(dataset_metadata("10.7910/DVN/UPJDE1"), 3)
+
+msnbc.transcripts <- get_dataframe_by_name(
+  "msnbc-2010--2021.csv.gz",
+  "10.7910/DVN/UPJDE1")
+
+read_csv("file.csv.gz") -> d
+
+# write uncompressed data
+d %>% write_csv("file.csv")
+
+
+mTr <- read_csv("../../../Downloads/msnbc.csv")
+head(mTr)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

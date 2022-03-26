@@ -1,1 +1,0 @@
-# polarization_mexico

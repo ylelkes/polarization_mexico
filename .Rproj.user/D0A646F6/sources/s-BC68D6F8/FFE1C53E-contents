@@ -1,0 +1,65 @@
+library(tidyverse)
+
+
+## ANES CDF
+cdf <- rio::import("~/Dropbox/anes_timeseries_cdf_spss_20211118.sav")
+table(cdf$VCF0004)
+cdf <- cdf %>% mutate(pid3= case_when(VCF0301 %in% c(1,2,3) ~ 'Democrats',
+                               VCF0301 %in% c(5,6,7) ~ 'Republicans',
+                               TRUE~'Independents'))
+
+table(cdf$pid3)
+out <- cdf %>% group_by(pid3,VCF0004) %>% summarise(ideo_dem=mean(VCF0503,na.rm=T),ideo_rep=mean(VCF0504,na.rm=T),ideo_self=mean(VCF0803,na.rm=T))
+
+m1 <- na.omit(out) %>% filter(pid3=='Republicans'|pid3=='Democrats') %>% select(ideo_self,VCF0004)
+
+all <- m1 %>% pivot_wider(id_cols = VCF0004,names_from = pid3,values_from = ideo_self) %>% mutate(diff=abs(Democrat-Republican)) %>% select(VCF0004,diff) %>% mutate(pid3='Actual')
+
+m1 <- na.omit(out) %>% filter(pid3=='Republicans') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff)
+m2 <- na.omit(out) %>% filter(pid3=='Democrats') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff)
+
+forplot <- rbind(m1,m2,all)
+
+
+m1 %>% pivot_wider(id_cols = VCF0004,names_from = pid3,values_from = ideo_self) -> actual_polarization
+
+ggplot(forplot,aes(x=VCF0004,y=diff,lty=pid3)) + geom_line() 
+
+#############
+out <- cdf %>% group_by(pid3,VCF0004) %>% summarise(ideo_dem=mean(VCF0508,na.rm=T),ideo_rep=mean(VCF0509,na.rm=T),ideo_self=mean(VCF0806,na.rm=T))
+
+m1 <- na.omit(out) %>% filter(pid3=='Republican'|pid3=='Democrat') %>% select(ideo_self,VCF0004)
+
+all <- m1 %>% pivot_wider(id_cols = VCF0004,names_from = pid3,values_from = ideo_self) %>% mutate(diff=abs(Democrat-Republican)) %>% select(VCF0004,diff) %>% mutate(pid3='Actual')
+
+m1 <- na.omit(out) %>% filter(pid3=='Republican') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff)
+m2 <- na.omit(out) %>% filter(pid3=='Democrat') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff)
+
+forplot <- rbind(m1,m2,all)
+
+
+m1 %>% pivot_wider(id_cols = VCF0004,names_from = pid3,values_from = ideo_self) -> actual_polarization
+
+ggplot(forplot,aes(x=VCF0004,y=diff,lty=pid3)) + geom_line() + geom_point()
+
+#####
+#############
+out <- cdf %>% group_by(pid3,VCF0004) %>% summarise(ideo_dem=mean(VCF0513,na.rm=T),ideo_rep=mean(VCF0514,na.rm=T),ideo_self=mean(VCF0809,na.rm=T))
+
+m1 <- na.omit(out) %>% filter(pid3=='Republicans'|pid3=='Democrats') %>% select(ideo_self,VCF0004)
+
+all <- m1 %>% pivot_wider(id_cols = VCF0004,names_from = pid3,values_from = ideo_self) %>% mutate(diff=abs(Democrats-Republicans)) %>% select(VCF0004,Democrats,Republicans,diff) %>% mutate(pid3='Actual')
+
+m1 <- na.omit(out) %>% filter(pid3=='Republicans') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff,pid3,Republicans=ideo_rep,Democrats=ideo_dem)
+m2 <- na.omit(out) %>% filter(pid3=='Democrats') %>% select(ideo_rep,ideo_dem,VCF0004) %>% mutate(diff=abs(ideo_rep-ideo_dem)) %>% select(VCF0004,diff,pid3,Republicans=ideo_rep,Democrats=ideo_dem)
+
+forplot <- plyr::rbind.fill(m1,m2,all)
+forplot %>% pivot_longer(cols = c(Republicans,Democrats)) -> out
+
+out$pid3 <- factor(out$pid3,labels = c("Actual Ideology","Democrats' Perceptions","Republicans' Perceptions"))
+library(grid)
+ggplot(out,aes(x=VCF0004,y=value,lty=name)) + facet_wrap(~pid3) + geom_line() + theme_bw(base_size = 20) + xlab("Year") + ylab("Left-Right Ideology") + ylim(1,7)+ guides(lty=guide_legend(title="Target Group"))+theme(panel.spacing = unit(2, "lines"))
+ggsave(filename = "perceivedpolarization.png",width=12)
+
+ggplot(forplot,aes(x=VCF0004,y=diff,lty=pid3)) + geom_line() + theme_bw(base_size = 20) + xlab("Year") + ylab("|Republican Ideology - Democrats Ideology|") + ylim(0,3)+ guides(lty=guide_legend(title="Group"))+theme(panel.spacing = unit(2, "lines"))
+ggsave(filename = "perceivedpolarization1.png",width=12)

@@ -1,0 +1,26 @@
+{
+    "id": "FFE1C53E",
+    "path": "~/Dropbox/polarization_mexico/perceived_polarization_plot.R",
+    "project_path": "perceived_polarization_plot.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1648061504392.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "65,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1648066341,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1648066341847,
+    "read_only": false,
+    "read_only_alternatives": []
+}

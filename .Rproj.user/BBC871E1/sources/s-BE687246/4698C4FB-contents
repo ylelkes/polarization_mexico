@@ -1,0 +1,73 @@
+library(rio)
+library(cli)
+library(devtools)
+library(textreadr)
+library(tidytext)
+library(tidyverse)
+library(ngram)
+library(nicknameR)
+library(stringr)
+library(entity)
+library(data.table)
+?person_annotator
+## Read in congress scores
+congress.all <- read.csv("RawData/HSall_members.csv")
+congress.all <- congress.all %>% filter(congress>=106)
+congress.year <- data.frame(congress=rep(106:117,each=2),year=1999:2022)
+
+congress.all <- merge(congress.all,congress.year,by="congress")
+
+
+# Separate the parts of the name and put in lowercase
+congress.all <- congress.all %>%
+  separate(bioname, c("last.name", "first.name"), ", ", remove = F, extra = "drop") %>%
+  separate(first.name, c("first.name", "extra.name"), " ", remove = F, extra = "drop")
+congress.all$last.name <- tolower(congress.all$last.name)
+congress.all$first.name <- tolower(congress.all$first.name)
+congress.all$extra.name <- tolower(congress.all$extra.name)
+
+
+nicks <- data.frame(nicknamer())
+nicks[,1] <- tolower(nicks[,1])
+nicks[,2] <- tolower(nicks[,2])
+
+congress.all$og.first.name <- congress.all$first.name
+for (i in 1:nrow(congress.all)) {
+  for (j in 1:nrow(nicks)) {
+    if (congress.all$og.first.name[i] == nicks$nickname[j]) {
+      congress.all$first.name[i] <- nicks$name[j]
+    }
+  }
+}
+
+save(congress.all,file = "Data/congressnicks.RData")
+
+## It is possible to fully automate this
+##################### 
+# CNN 1
+forresults <- list()
+load("Data/congressnicks.RData")
+cnn1 <- fread("RawCNN/cnn-1.csv")
+for(i in 1:1000){
+istranscript <- tibble(text=as.character(cnn1$text[i]))
+istranscript %>%   unnest_tokens(bigram, text, token = "ngrams", n = 2)   %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  count(word1, word2, sort = TRUE) -> name_bigrams
+colnames(name_bigrams) <- c("og.first.name", "last.name", "number")
+
+name_bigrams <- na.omit(name_bigrams)
+name_bigrams$first.name <- name_bigrams$og.first.name
+for (k in 1:nrow(name_bigrams)) {
+  for (j in 1:nrow(nicks)) {
+    if (name_bigrams$og.first.name[k] == nicks$nickname[j]) {
+      name_bigrams$first.name[k] <- nicks$name[j]
+    }
+  }
+}
+
+congress_short <- filter(congress.all,year==cnn1$year[i])
+forresults[[i]] <- merge(name_bigrams, congress_short, by=c("first.name","last.name"))
+print(i)
+}

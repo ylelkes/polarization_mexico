@@ -1,0 +1,766 @@
+---
+title: "Polarization in America"
+subtitle: "The Landscape, Manifestations, and Measurements"
+author: "Yphtach Lelkes"
+institute: "University of Pennsylvania"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: ["default", "style.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Three levels of polarization
+
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+library(tidyverse)
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'    
+  ")
+widgetframe::frameWidget(m)
+
+```
+
+---
+## Outline of the talk
+1. Introduce each level of polarization
+  a. Elite polarization, Mass polarization, Meso-level polarization
+2. Discuss ways in which they have been measured
+3. Discuss trends
+4. Leave with questions that might be interesting for people interested in complex systems
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+library(tidyverse)
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab1 [label = '@@1']
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'    
+  ")
+widgetframe::frameWidget(m)
+
+```
+---
+## Elite polarization
+* We tend to think of it in terms of ideology: A candidate, a parties, position on one or more dimensions (generally left-right)
+
+--
+* Roll call votes: McCarty, N., Poole, K. T., & Rosenthal, H. (2016). Polarized America: The dance of ideology and unequal riches. mit Press.
+
+--
+* Campaign donation data: Bonica, A. (2014). Mapping the ideological marketplace. American Journal of Political Science, 58(2), 367-386.
+
+--
+* Use some scaling procedure, like Item Response Theory, Singular value decomposition, or what not, to locate actors on a latent dimension
+
+--
+* Need to assume that votes, who you get money from, are indicators of ideology 
+
+---
+## Researchers tend to think ideology can fall on multiple dimensions:
+1. An economic/redistribution dimensions
+
+--
+2. Cultural distribution
+
+--
+3. Other dimensions have been suggested.
+
+--
+4. However, among political elites, a one-dimensional model can correctly classify ~84 percent of votes, a two-dimensional model correctly classifies ~86 percent or so (McCarty, Poole, and Rosenthal)
+
+---
+
+class: full
+
+![](Figures/Screen Shot 2022-03-18 at 1.01.10 PM.png)
+
+
+---
+
+class: full
+
+## [Vote View](https://voteview.com/congress/senate)
+
+
+![Plot title. ](presentation_insertimage_17.png)
+
+---
+
+class: full
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE,eval=F}
+library(tidyverse)
+library(ggpmisc)
+hsall <- read.csv("~/Dropbox/SiddiquiSharedPORES/RawData/HSall_members.csv")
+hsall <- hsall %>% filter(congress>33 & chamber=="House" & party_code %in% c("100","200"))
+hsall$party_code <- factor(hsall$party_code,labels = c("Republicans","Democrats")) 
+
+a <- ggplot(hsall %>% filter(year>1959),aes(x=nominate_dim1, fill=party_code)) + geom_density() +    transition_time(year) +
+  ease_aes('linear')+ labs(title = 'Year: {as.integer(frame_time)}', x = 'Ideology')
+a <- animate(a + enter_fade() + exit_shrink(), fps = 5, nframes =25 , device = "svg")
+
+anim_save(animation = a,filename = "a.gif")
+
+congress.year <- data.frame(congress=34:117,year=seq(1856,2022,by=2))
+hsall <- merge(hsall,congress.year,by="congress")
+hsall %>% group_by(party_code,year) %>% summarise(m=mean(nominate_dim1,na.rm=T)) %>% pivot_wider(id_cols=year,values_from = m ,names_from = party_code) %>% mutate(diff=abs(Republicans-Democrats)) -> pol
+save(hsall,file="hsall.RData")
+save(pol,file="pol.RData")
+```
+![](a.gif)
+
+---
+
+class: full
+
+```{r, fig.align = 'center', echo = FALSE, out.width = "75%", dpi= 500, warning = FALSE}
+      load("pol.RData")
+pol %>%  ggplot(aes(x=year,y=diff)) + geom_point(alpha=.01) +theme_bw() + geom_line() + ylab(expression(paste("|",mu[Democrats]-mu[Republicans],"|")))
+
+```                
+                
+---
+
+class: full
+
+```{r, fig.align = 'center', echo = FALSE, out.width = "75%", dpi= 500, warning = FALSE,message=FALSE}
+library(ggpmisc)
+load("hsall.RData")
+
+ggplot(hsall %>% filter(year>=1960),aes(x=(year-1960),y=nominate_dim1,lty=party_code)) + geom_point(alpha=.01) +theme_bw() + geom_smooth() +
+stat_poly_eq(aes(label = ..eq.label..), 
+               parse = TRUE,label.y = c(.1,.9)) + scale_x_continuous(breaks=seq(1,length(1960:2021),by=5),labels=seq(1,length(1960:2021),by=5)+1960)
+
+```
+
+---
+## Bill consponsorship networks
+.pull-left[![Plot title. ](presentation_insertimage_14.png)]
+.pull-right[![Plot title. ](presentation_insertimage_15.png)]
+
+---
+## Elite polarization in the United States is:
+1. Increasingly unidimensional
+2. Increasingly polarized
+3. Asymmetric (Republicans have polarized at an increasing rate)
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+library(tidyverse)
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab3 [label = '@@3']
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'    
+  ")
+widgetframe::frameWidget(m)
+
+```
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab3 [label = '@@3']
+node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab4 [label = '@@4']
+  tab5 [label = '@@5']
+  tab6 [label = '@@6']
+  tab7 [label = '@@7']
+
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+  tab3 -> {tab4 tab5 tab6 tab7}
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'   
+  [4]: 'Divergence'    
+  [5]: 'Sorting'    
+  [6]: 'Affective Polarization'    
+  [7]: 'Perceived Polarization'    
+
+
+  ")
+  
+
+
+widgetframe::frameWidget(m)
+
+```
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab4 [label = '@@4']
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab5 [label = '@@5']
+  tab6 [label = '@@6']
+  tab7 [label = '@@7']
+
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+  tab3 -> {tab4 tab5 tab6 tab7}
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'   
+  [4]: 'Divergence'    
+  [5]: 'Sorting'    
+  [6]: 'Affective Polarization'    
+  [7]: 'Perceived Polarization'    
+
+
+  ")
+  
+
+
+widgetframe::frameWidget(m)
+
+```
+
+
+
+---
+
+class: full
+background-image: url("presentation_insertimage_2.png")
+background-size: contain
+
+
+---
+class: center, middle
+
+## While elite ideology seems to be unidimensional, political scientists tend to think that it is at least two dimensions in the mass public.
+
+Treier, S., & Hillygus, D. S. (2009). The nature of political ideology in the contemporary electorate. Public Opinion Quarterly, 73(4), 679-703.
+
+---
+background-image: url("presentation_insertimage_13.png")
+background-size: contain
+
+---
+background-image: url("Figures/drutman.png")
+background-size: contain
+
+
+---
+## Has there been an increase in ideological divergence?
+1. Data from the American National Election Study, 1982-2020
+2. Some people think the government should provide fewer services, even in areas such as health and education, in order to reduce spending. Other people feel that it is important for the government to provide many more services even if it means an increase in spending. And of course, some other people have opinions somewhere in between, at points 2,3,4,5, or 6. Where would you place yourself on this scale?
+
+---
+background-image: url("Figures/governmentservices.png")
+background-size: contain
+
+---
+## Another example
+Some people feel that the government in Washington should make every possible effort to improve the social and economic position of blacks and other minority groups. Others feel that the government should not make any special effort to help minorities because they should help themselve. Others feel that the government should not make any special effort to help blacks because they should help themselves. Where would you place yourself on this scale? (1=Government should help minority groups/blacks; 7=Minority groups/ blacks should help themselves)
+
+---
+background-image: url("Figures/minorities.png")
+background-size: contain
+
+---
+![Plot title. ](presentation_insertimage_6.png)
+
+---
+## 
+* Create a measure of ideology created from 67 policy questions in the American National Election Study (1956 - 2012)
+* Compare standard deviations within years for the mass public compared to US senators 
+
+---
+![Plot title. ](presentation_insertimage_5.png)
+
+---
+class: middle, center
+## In sum: Very little evidence that Americans have diverged
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  tab4 [label = '@@4']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab5 [label = '@@5']
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab6 [label = '@@6']
+  tab7 [label = '@@7']
+
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+  tab3 -> {tab4 tab5 tab6 tab7}
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'   
+  [4]: 'Divergence'    
+  [5]: 'Sorting'    
+  [6]: 'Affective Polarization'    
+  [7]: 'Perceived Polarization'    
+
+
+  ")
+  
+
+
+widgetframe::frameWidget(m)
+
+```
+---
+## Ideological Sorting
+.pull-left[1. Partisanship is not ideology
+2. In the United States, until recently, lots of Democrats held conservative positions, and lots of Republicans held liberal positions.]
+.pull-right[
+```{r, echo=FALSE}
+library(waffle)
+library(patchwork)
+parts <- c(Liberal=20, Moderate=20, Conservative=20)
+
+a <- waffle(parts) + ggtitle("Democrats") + theme_bw(base_size = 15)
+b <-  waffle(parts) + ggtitle("Republicans")+ theme_bw(base_size = 15)
+a+b+plot_layout(guides='collect')
+```
+]
+
+---
+
+## Ideological Sorting
+.pull-left[
+1. Partisanship is not ideology
+2. In the United States, until recently, lots of Democrats held conservative positions, and lots of Republicans held liberal positions. 
+3. Through a process of conversion (Democrats becoming liberal/Republicans become conservative) or switching (liberals switching to the Democratic party/conservatives switching to the Republican party) the parties have sorted]
+
+.pull-right[
+```{r,echo=FALSE}
+library(waffle)
+library(patchwork)
+parts_l <- c(Liberal=40, Moderate=20, Conservative=0)
+parts_c <- c(Liberal=0, Moderate=20, Conservative=40)
+
+a <- waffle(parts) + ggtitle("Democrats") + theme_bw(base_size = 15)
+b <-  waffle(parts) + ggtitle("Republicans")+ theme_bw(base_size = 15)
+a+b+plot_layout(guides='collect')
+```
+]
+
+---
+## Pew Partisan Consistency Study
+
+![](Figures/PP-2014-06-12-polarization-A1-01.webp)
+
+
+[Pew Study](https://www.pewresearch.org/politics/interactives/political-polarization-1994-2017/)
+
+---
+## Pew Partisan Consistency Study
+1. Coded responses as -1 for a liberal response, 1 for a conservative response, 0 for don't know/refused/other
+2. Summed up to create an ideological consistency scale:
+  * Consistently conservative (+7 to +10)
+  * Mostly conservative (+3 to +6)
+  * Mixed (-2 to +2)
+  * Mostly liberal (-6 to -3)
+  * Consistently liberal (-10 to -7)
+  
+---
+![Plot title. ](presentation_insertimage_12.png)
+
+---
+class: middle, center
+## In sum: Pretty clear evidence that Americans have sorted
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  tab4 [label = '@@4']
+  tab5 [label = '@@5']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab6 [label = '@@6']
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab7 [label = '@@7']
+
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+  tab3 -> {tab4 tab5 tab6 tab7}
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'   
+  [4]: 'Divergence'    
+  [5]: 'Sorting'    
+  [6]: 'Affective Polarization'    
+  [7]: 'Perceived Polarization'    
+
+
+  ")
+  
+
+
+widgetframe::frameWidget(m)
+
+```
+
+---
+## Affective Polarization
+1. Americans increasingly dislike one another
+3. At the aggregate level, affective polarization. 
+4. At the individual level, partisan prejudice/animosity
+5. Operationalized in lots of ways. 
+6. Iyengar, S., Lelkes, Y., Levendusky, M., Malhotra, N., & Westwood, S. J. (2019). The origins and consequences of affective polarization in the United States. Annual Review of Political Science, 22, 129-146.
+
+
+---
+## Feeling thermometers. 
+.pull-left[![Plot title. ](presentation_insertimage_18.png)]
+.pull-right[ 
+* Asked about how people feel about democrats and republicans
+* We calculate feelings towards the in-party, feelings towards the out-party and the difference
+]
+
+
+---
+background-image: url("presentation_insertimage_19.png")
+background-size: contain
+
+---
+## Interparty Marriage
+* Would you be unhappy if your kid married someone from the other party?
+
+---
+#### Percent saying they would be unhappy at interparty marriage
+
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/marriage1.png")
+```
+
+
+---
+#### Percent saying they would be unhappy at interparty marriage
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/marriage2.png")
+```
+
+---
+## Name calling 
+* Percent of americans calling the other side selfish or intelligent 
+
+---
+#### Percent saying that the target group is selfish
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/selfish1-1.png")
+```
+
+
+---
+#### Percent saying that the target group is selfish
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/selfish-1.png")
+```
+
+
+---
+#### Percent saying that the target group is intelligent
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/intelligent2-1.png")
+```
+
+---
+#### Percent saying that the target group is intelligent
+```{r echo=FALSE, out.height=500}
+knitr::include_graphics("Figures/intelligent1-1.png")
+```
+
+---
+class: middle, center
+## In sum: Pretty clear evidence partisans dislike one another
+
+---
+
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  tab4 [label = '@@4']
+  tab5 [label = '@@5']
+  tab6 [label = '@@6']
+  node [fontname = arial, shape = oval, color = blue, style = filled]
+  tab7 [label = '@@7']
+
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+  tab3 -> {tab4 tab5 tab6 tab7}
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'   
+  [4]: 'Divergence'    
+  [5]: 'Sorting'    
+  [6]: 'Affective Polarization'    
+  [7]: 'Perceived Polarization'    
+
+
+  ")
+  
+
+
+widgetframe::frameWidget(m)
+
+```
+---
+## Perceived (or False) Polarization
+1. Americans perceive that the country is more ideologically polarized than it actually is.
+2. For instance, the ANES asked people to place the two parties on a scale from left (1) to right (7)
+3. Compare where Democrats/Republicans actually stand, where Democrats perceive Republicans/Democrats to stand, and where Republicans perceive Democrats/Republicans to stand
+
+
+---
+![](perceivedpolarization.png)
+
+---
+![](perceivedpolarization1.png)
+
+---
+class: middle, center
+## In sum: Pretty clear evidence that perceived polarization outpaces actual polarization
+---
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+library(tidyverse)
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'    
+  ")
+widgetframe::frameWidget(m)
+
+```
+
+
+
+---
+## Meso-level polarization
+1. Institutions that link elites and the mass public (and likely the engines of polarization).
+  
+  a. Interest groups: Crosson, J. M., Furnas, A. C., & Lorenz, G. M. (2020). Polarized pluralism: organizational preferences and biases in the American pressure system. American Political Science Review, 114(4), 1117-1137.
+  
+  b. state parties: Shor, B., & McCarty, N. (2011). The ideological mapping of American legislatures. American Political Science Review, 105(3), 530-551.
+  
+  c. party activists: Collitt, S., & Highton, B. (2021). The Policy Polarization of Party Activists in the United States. American Politics Research, 49(4), 386-399.
+  
+  d. media
+  
+---
+## Media polarization
+1. Eunji Kim (Vanderbilt), Josh McCrain (Utah), me tied together several databases to examine changes in ideology on cable tv (Fox News, CNN, MSNBC)
+
+---
+## Took data from the [Stanford Cable News Analyzer](https://tvnews.stanford.edu/)
+
+![Plot title. ](presentation_insertimage_7.png)
+
+---
+## Took data from the [Stanford Cable News Analyzer](https://tvnews.stanford.edu/)
+1. Dataset of a decade worth of video (January 1, 2010 - March 4, 2021) on CNN, Fox News, and MSNBC
+
+
+---
+## Matched names to their ideology score from the [DIME database](https://data.stanford.edu/dime)
+
+.pull-left[1. The Database on Ideology, Money in Politics, and Elections uses campaign donation data to scale donors and candidates on a single dimension
+2. Matched the contributor list from DIME to the names in the Stanford database
+3. 704 names that appeared in both Stanford and DIME were matched
+4. Estimated the ideology of an outlet by the average ideology of the guests over time
+]
+
+.pull-right[
+![Plot title. ](presentation_insertimage_10.png)]
+
+---
+class: full
+background-image: url("Figures/program.png")
+background-size: contain
+
+---
+class: full
+background-image: url("Figures/timeslot_trends-1.png")
+background-size: contain
+
+---
+```{r,results='asis',echo=F,message=F,warning=FALSE}
+library(tidyverse)
+
+library(DiagrammeR)
+m <- grViz(diagram = "digraph flowchart {
+  node [fontname = arial, shape = oval, color = grey, style = filled]
+  tab1 [label = '@@1']
+  tab2 [label = '@@2']
+  tab3 [label = '@@3']
+  
+  tab1 -> tab2
+  tab2 -> tab1
+  tab1 -> tab3
+  tab3 -> tab1
+  tab2 -> tab3
+  tab3 -> tab2
+
+  
+}
+  
+  [1]: 'Elite Polarization'
+  [2]: 'Meso-Level Polarization'    
+  [3]: 'Mass Polarization'    
+  ")
+widgetframe::frameWidget(m)
+
+```
+
+---
+## Concluding thoughts
+1. We have lots of trends, some piecemeal explanations (e.g., the internet, rise in social media, etc) but few holistic models that consider the three levels of polarization
+2. We need a better understanding of mechanisms that tie together levels and types of polarization
+3. When studying polarization, make sure you clearly define the level and type of polarization.

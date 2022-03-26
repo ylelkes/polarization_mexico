@@ -1,0 +1,122 @@
+---
+title: "Merging Transcript w Congress"
+author: "Imran Siddiqui"
+date: "2/17/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading in libraries
+```{r}
+getwd()
+library(rio)
+library(cli)
+library(devtools)
+library(textreadr)
+library(tidytext)
+library(tidyverse)
+library(ngram)
+library(nicknameR)
+library(stringr)
+library(entity)
+```
+
+Setting up Congress data
+```{r}
+congress.all <- read.csv("RawData/HSall_members.csv")
+
+# Separate the parts of the name and put in lowercase
+congress.all <- congress.all %>%
+  separate(bioname, c("last.name", "first.name"), ", ", remove = F, extra = "drop") %>%
+  separate(first.name, c("first.name", "extra.name"), " ", remove = F, extra = "drop")
+congress.all$last.name <- tolower(congress.all$last.name)
+congress.all$first.name <- tolower(congress.all$first.name)
+congress.all$extra.name <- tolower(congress.all$extra.name)
+
+# Subset the data for the specified year of transcript
+```
+
+Set up nickname data
+```{r}
+nicks <- data.frame(nicknamer())
+nicks[,1] <- tolower(nicks[,1])
+nicks[,2] <- tolower(nicks[,2])
+
+```
+
+Testing with sample transcript
+```{r}
+istranscript <- tibble(text=read_document("BulkDataLN/_FOX_and__2018_01_01_to_2018_12_31_srcMTA2NTkxOQ-version-1/plaintext/fox-news-network-house-intel-committee-4b4dbc26-7b52-11ec-9e87-0242ac160002.txt"))
+istranscript %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)  %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) %>%
+  count(word1, word2, sort = TRUE) -> name_bigrams
+colnames(name_bigrams) <- c("og.first.name", "last.name", "number")
+```
+
+Replacing nicknames in bigrams with full names
+```{r}
+name_bigrams <- na.omit(name_bigrams)
+name_bigrams$first.name <- name_bigrams$og.first.name
+for (i in 1:nrow(name_bigrams)) {
+  for (j in 1:nrow(nicks)) {
+    if (name_bigrams$og.first.name[i] == nicks$nickname[j]) {
+      name_bigrams$first.name[i] <- nicks$name[j]
+    }
+  }
+}
+```
+
+Testing the merge
+```{r}
+test.merge <- merge(name_bigrams, congress18, by=c("first.name","last.name"))
+merge.last <- merge(name_bigrams, congress18, by="last.name")
+```
+
+When merging with just last name, it many incorrect rows, but it does include Charles Grassley who was left out of the original merge because the nickname table turned Chuck to Charlie instead of Charles. It also properly included:
+John McCain (nickname turned him to Jonathan)
+Nancy Pelosi (nickname turned to Anne)
+
+
+
+SO
+Other option is to turn the entire Congress into full names too before merging with transcript bigrams
+```{r}
+congress18$og.first.name <- congress18$first.name
+for (i in 1:nrow(congress18)) {
+  for (j in 1:nrow(nicks)) {
+    if (congress18$og.first.name[i] == nicks$nickname[j]) {
+      congress18$first.name[i] <- nicks$name[j]
+    }
+  }
+}
+
+merge.all.full <-  merge(name_bigrams, congress18, by=c("first.name","last.name"))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

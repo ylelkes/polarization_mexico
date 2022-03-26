@@ -1,0 +1,2 @@
+tt <- read.csv("~/Desktop//validated_testsample.csv")
+prop.table(table(tt$validated))
